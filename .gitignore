@@ -22,6 +22,7 @@ go.work
 go.work.sum
 
 /dist
+/function_urls.json
 
 .terraform
 .terraform.lock.hcl

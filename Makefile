@@ -38,7 +38,9 @@ TF_VARS=-var name=$(APP_NAME) \
 deploy: $(LAMBDA_BINARY)
 	cd terraform/main && \
 	terraform init $(TF_INIT_VARS) && \
-	terraform apply -auto-approve=$(AUTO_APPROVE) $(TF_VARS)
+	terraform apply -auto-approve=$(AUTO_APPROVE) $(TF_VARS) && \
+	terraform output -json function_urls | jq > ../../function_urls.json
+	@echo "wrote function_urls.json"
 
 .PHONY: destroy
 destroy:

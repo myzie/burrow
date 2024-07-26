@@ -207,3 +207,59 @@ module "region-ap-south-1" {
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
 }
+
+// Singapore
+module "region-ap-southeast-1" {
+  providers     = { aws = aws.ap-southeast-1 }
+  source        = "../modules/lambda"
+  log_retention = var.log_retention
+  name          = var.name
+  tags          = var.tags
+  filename      = var.lambda_filename
+  handler       = var.lambda_handler
+  runtime       = var.lambda_runtime
+  architectures = var.lambda_architectures
+  iam_role_arn  = aws_iam_role.this.arn
+}
+
+// Sydney
+module "region-ap-southeast-2" {
+  providers     = { aws = aws.ap-southeast-2 }
+  source        = "../modules/lambda"
+  log_retention = var.log_retention
+  name          = var.name
+  tags          = var.tags
+  filename      = var.lambda_filename
+  handler       = var.lambda_handler
+  runtime       = var.lambda_runtime
+  architectures = var.lambda_architectures
+  iam_role_arn  = aws_iam_role.this.arn
+}
+
+// Tokyo
+module "region-ap-northeast-1" {
+  providers     = { aws = aws.ap-northeast-1 }
+  source        = "../modules/lambda"
+  log_retention = var.log_retention
+  name          = var.name
+  tags          = var.tags
+  filename      = var.lambda_filename
+  handler       = var.lambda_handler
+  runtime       = var.lambda_runtime
+  architectures = var.lambda_architectures
+  iam_role_arn  = aws_iam_role.this.arn
+}
+
+// Osaka
+module "region-ap-northeast-3" {
+  providers     = { aws = aws.ap-northeast-3 }
+  source        = "../modules/lambda"
+  log_retention = var.log_retention
+  name          = var.name
+  tags          = var.tags
+  filename      = var.lambda_filename
+  handler       = var.lambda_handler
+  runtime       = var.lambda_runtime
+  architectures = var.lambda_architectures
+  iam_role_arn  = aws_iam_role.this.arn
+}
