@@ -8,15 +8,18 @@ import (
 	"net/http"
 )
 
-// HTTPTransport implements the http.RoundTripper interface
-type HTTPTransport struct {
-	ProxyURL   string
-	Method     string
-	HTTPClient *http.Client
+var _ http.RoundTripper = &Transport{}
+
+// Transport implements the http.RoundTripper interface. Used to proxy HTTP
+// requests via a Burrow HTTP endpoint.
+type Transport struct {
+	proxyURL string
+	method   string
+	client   *http.Client
 }
 
 // RoundTrip implements the http.RoundTripper interface
-func (t *HTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	serReq, err := serializeRequest(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize request: %w", err)
@@ -25,13 +28,13 @@ func (t *HTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
-	proxyReq, err := http.NewRequestWithContext(req.Context(), t.Method, t.ProxyURL,
+	proxyReq, err := http.NewRequestWithContext(req.Context(), t.method, t.proxyURL,
 		bytes.NewReader(payload))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy request: %w", err)
 	}
 	proxyReq.Header.Set("Content-Type", "application/json")
-	proxyResp, err := t.HTTPClient.Do(proxyReq)
+	proxyResp, err := t.client.Do(proxyReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to send request to proxy: %w", err)
 	}
@@ -50,20 +53,21 @@ func (t *HTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return deserializeResponse(&serResp)
 }
 
-// NewHTTPTransport creates a new HTTPTransport
-func NewHTTPTransport(proxyURL string, method string, c ...*http.Client) *HTTPTransport {
-	var client *http.Client
-	if len(c) > 0 {
-		client = c[0]
-	} else {
-		client = &http.Client{}
+// NewTransport creates a new Transport
+func NewTransport(proxyURL string, method string, c ...*http.Client) *Transport {
+	return &Transport{
+		proxyURL: proxyURL,
+		method:   "POST",
+		client:   &http.Client{},
 	}
-	if method == "" {
-		method = "POST"
-	}
-	return &HTTPTransport{
-		ProxyURL:   proxyURL,
-		Method:     method,
-		HTTPClient: client,
+}
+
+// NewTransportWithClient creates a new Transport that uses the provided
+// HTTP client internally. If you're not sure, use NewTransport instead.
+func NewTransportWithClient(proxyURL string, method string, c *http.Client) *Transport {
+	return &Transport{
+		proxyURL: proxyURL,
+		method:   method,
+		client:   c,
 	}
 }

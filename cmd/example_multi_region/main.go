@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/myzie/burrow"
 )
@@ -38,33 +39,40 @@ func main() {
 		log.Fatal(err)
 	}
 
-	clients := map[string]*http.Client{}
-	for region, proxyURL := range functions {
-		clients[region] = &http.Client{
-			Transport: burrow.NewHTTPTransport(proxyURL, "POST"),
-		}
+	var proxyURLs []string
+	for _, proxyURL := range functions {
+		proxyURLs = append(proxyURLs, proxyURL)
 	}
 
-	for region, client := range clients {
+	client := burrow.NewRoundRobinClient(proxyURLs)
+
+	for {
 		fmt.Println("----")
-		fmt.Println(" region:", region)
-		fmt.Println(" proxy:", functions[region])
-		req, err := http.NewRequest("GET", target, nil)
+		body, err := runRequest(client, target)
 		if err != nil {
 			log.Fatal(err)
 		}
-		resp, err := client.Do(req)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			log.Fatalf("unexpected status code: %d", resp.StatusCode)
-		}
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(" body:", string(body))
+		fmt.Println(body)
+		time.Sleep(time.Second)
 	}
+}
+
+func runRequest(c *http.Client, target string) (string, error) {
+	req, err := http.NewRequest("GET", target, nil)
+	if err != nil {
+		return "", err
+	}
+	resp, err := c.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("non-200 status code: %d", resp.StatusCode)
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(body), nil
 }

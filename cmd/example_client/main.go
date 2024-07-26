@@ -16,7 +16,7 @@ func main() {
 	flag.StringVar(&proxy, "proxy", "", "URL of the proxy to use")
 	flag.Parse()
 
-	transport := burrow.NewHTTPTransport(proxy, "POST")
+	transport := burrow.NewTransport(proxy, "POST")
 	client := &http.Client{Transport: transport}
 	req, err := http.NewRequest(method, target, nil)
 	if err != nil {

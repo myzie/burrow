@@ -9,14 +9,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/lambda"
 )
 
-// LambdaProxyTransport implements the http.RoundTripper interface
-type LambdaProxyTransport struct {
-	LambdaClient *lambda.Client
-	FunctionName string
+var _ http.RoundTripper = &LambdaTransport{}
+
+// LambdaTransport implements the http.RoundTripper interface. Used to proxy
+// HTTP requests via invoking an AWS Lambda function.
+type LambdaTransport struct {
+	client       *lambda.Client
+	functionName string
 }
 
 // RoundTrip implements the http.RoundTripper interface
-func (t *LambdaProxyTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t *LambdaTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	serReq, err := serializeRequest(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize request: %w", err)
@@ -25,8 +28,8 @@ func (t *LambdaProxyTransport) RoundTrip(req *http.Request) (*http.Response, err
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
-	result, err := t.LambdaClient.Invoke(req.Context(), &lambda.InvokeInput{
-		FunctionName: aws.String(t.FunctionName),
+	result, err := t.client.Invoke(req.Context(), &lambda.InvokeInput{
+		FunctionName: aws.String(t.functionName),
 		Payload:      payload,
 	})
 	if err != nil {
@@ -39,10 +42,10 @@ func (t *LambdaProxyTransport) RoundTrip(req *http.Request) (*http.Response, err
 	return deserializeResponse(&serResp)
 }
 
-// NewLambdaProxyTransport creates a new LambdaProxyTransport
-func NewLambdaProxyTransport(lambdaClient *lambda.Client, functionName string) *LambdaProxyTransport {
-	return &LambdaProxyTransport{
-		LambdaClient: lambdaClient,
-		FunctionName: functionName,
+// NewLambdaTransport creates a new LambdaTransport
+func NewLambdaTransport(client *lambda.Client, functionName string) *LambdaTransport {
+	return &LambdaTransport{
+		client:       client,
+		functionName: functionName,
 	}
 }
