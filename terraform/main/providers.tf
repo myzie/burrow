@@ -3,9 +3,9 @@
 provider "aws" {
   region                      = "us-east-1"
   alias                       = "us-east-1"
-  skip_metadata_api_check     = true
-  skip_region_validation      = true
-  skip_credentials_validation = true
+  skip_metadata_api_check     = false
+  skip_region_validation      = false
+  skip_credentials_validation = false
 }
 
 // California
@@ -89,7 +89,6 @@ provider "aws" {
   skip_credentials_validation = true
 }
 
-
 // Canada
 provider "aws" {
   region                      = "ca-central-1"
@@ -117,11 +116,38 @@ provider "aws" {
   skip_credentials_validation = true
 }
 
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.60.0"
-    }
-  }
+// Singapore
+provider "aws" {
+  region                      = "ap-southeast-1"
+  alias                       = "ap-southeast-1"
+  skip_metadata_api_check     = true
+  skip_region_validation      = true
+  skip_credentials_validation = true
+}
+
+// Sydney
+provider "aws" {
+  region                      = "ap-southeast-2"
+  alias                       = "ap-southeast-2"
+  skip_metadata_api_check     = true
+  skip_region_validation      = true
+  skip_credentials_validation = true
+}
+
+// Tokyo
+provider "aws" {
+  region                      = "ap-northeast-1"
+  alias                       = "ap-northeast-1"
+  skip_metadata_api_check     = true
+  skip_region_validation      = true
+  skip_credentials_validation = true
+}
+
+// Osaka
+provider "aws" {
+  region                      = "ap-northeast-3"
+  alias                       = "ap-northeast-3"
+  skip_metadata_api_check     = true
+  skip_region_validation      = true
+  skip_credentials_validation = true
 }

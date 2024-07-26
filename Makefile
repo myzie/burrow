@@ -1,6 +1,8 @@
 default: deploy
 
-GIT_REV=$(shell git rev-parse --short HEAD)
+APP_NAME?=burrow
+
+GIT_REVISION=$(shell git rev-parse --short HEAD)
 
 AWS_ACCOUNT_ID=$(shell aws sts get-caller-identity --query Account --output text)
 
@@ -8,43 +10,38 @@ AWS_REGION?=us-east-1
 
 LAMBDA_BUILD=CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 
-LAMBDA_BINARY=dist/burrow-$(GIT_REV).zip
+LAMBDA_BINARY=dist/burrow-$(GIT_REVISION).zip
 
 BUCKET_NAME?=terraform-$(AWS_ACCOUNT_ID)
 
-.PHONY: lambda
-lambda:
+AUTO_APPROVE?=false
+
+$(LAMBDA_BINARY): $(shell find . -name '*.go') go.mod go.sum
+	mkdir -p dist
 	$(LAMBDA_BUILD) -o dist/bootstrap ./cmd/lambda
 	zip -j $(LAMBDA_BINARY) dist/bootstrap
 
 .PHONY: clean
 clean:
-	rm -rf dist && mkdir dist
+	rm -rf dist
+
+TF_INIT_VARS=-backend-config=bucket=$(BUCKET_NAME) \
+	-backend-config=key=states/burrow/terraform.tfstate \
+	-backend-config=region=$(AWS_REGION)
+
+TF_VARS=-var name=$(APP_NAME) \
+	-var git_revision=$(GIT_REVISION) \
+	-var lambda_filename=../../$(LAMBDA_BINARY) \
+	-var lambda_handler=burrow
 
 .PHONY: deploy
-deploy:
-	$(MAKE) clean
-	$(MAKE) lambda
-	cd terraform/deployments/prod && \
-	terraform init \
-		-backend-config=bucket=$(BUCKET_NAME) \
-		-backend-config=key=states/burrow/terraform.tfstate \
-		-backend-config=region=$(AWS_REGION) && \
-	terraform apply -auto-approve \
-		-var revision=$(GIT_REV) \
-		-var lambda_zip_path=../../../$(LAMBDA_BINARY) \
-		-var bucket_name=$(BUCKET_NAME) \
-		-var bucket_key=$(LAMBDA_BINARY)
+deploy: $(LAMBDA_BINARY)
+	cd terraform/main && \
+	terraform init $(TF_INIT_VARS) && \
+	terraform apply -auto-approve=$(AUTO_APPROVE) $(TF_VARS)
 
 .PHONY: destroy
 destroy:
-	cd terraform/deployments/prod && \
-	terraform init \
-		-backend-config=bucket=$(BUCKET_NAME) \
-		-backend-config=key=states/burrow/terraform.tfstate \
-		-backend-config=region=$(AWS_REGION) && \
-	terraform destroy -auto-approve \
-		-var revision=$(GIT_REV) \
-		-var lambda_zip_path=../../../$(LAMBDA_BINARY) \
-		-var bucket_name=$(BUCKET_NAME) \
-		-var bucket_key=$(LAMBDA_BINARY)
+	cd terraform/main && \
+	terraform init $(TF_INIT_VARS) && \
+	terraform destroy -auto-approve=$(AUTO_APPROVE) $(TF_VARS)

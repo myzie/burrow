@@ -8,14 +8,15 @@ import (
 	"net/http"
 )
 
-// PostTransport implements the http.RoundTripper interface
-type PostTransport struct {
+// HTTPTransport implements the http.RoundTripper interface
+type HTTPTransport struct {
 	ProxyURL   string
+	Method     string
 	HTTPClient *http.Client
 }
 
 // RoundTrip implements the http.RoundTripper interface
-func (t *PostTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+func (t *HTTPTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	serReq, err := serializeRequest(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize request: %w", err)
@@ -24,7 +25,7 @@ func (t *PostTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
 	}
-	proxyReq, err := http.NewRequestWithContext(req.Context(), "POST", t.ProxyURL,
+	proxyReq, err := http.NewRequestWithContext(req.Context(), t.Method, t.ProxyURL,
 		bytes.NewReader(payload))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create proxy request: %w", err)
@@ -49,16 +50,20 @@ func (t *PostTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return deserializeResponse(&serResp)
 }
 
-// NewPostTransport creates a new PostTransport
-func NewPostTransport(proxyURL string, c ...*http.Client) *PostTransport {
+// NewHTTPTransport creates a new HTTPTransport
+func NewHTTPTransport(proxyURL string, method string, c ...*http.Client) *HTTPTransport {
 	var client *http.Client
 	if len(c) > 0 {
 		client = c[0]
 	} else {
 		client = &http.Client{}
 	}
-	return &PostTransport{
+	if method == "" {
+		method = "POST"
+	}
+	return &HTTPTransport{
 		ProxyURL:   proxyURL,
+		Method:     method,
 		HTTPClient: client,
 	}
 }
