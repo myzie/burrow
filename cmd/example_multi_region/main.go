@@ -62,6 +62,7 @@ func runRequest(c *http.Client, target string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	req.Header.Set("Accept", "application/json")
 	resp, err := c.Do(req)
 	if err != nil {
 		return "", err
