@@ -20,7 +20,7 @@ rotate through multiple Lambda functions in different regions.
 
 ## Usage
 
-Add the Burrow package to your Go project:
+Add burrow package to your Go project:
 
 ```bash
 go get github.com/myzie/burrow
@@ -62,7 +62,7 @@ client := burrow.NewRoundRobinClient([]string{
 })
 ```
 
-## AWS Multi-Region Deployment
+## Multi-Region Deployment in AWS
 
 Burrow includes Terraform configurations to deploy Burrow across the 17
 default-enabled AWS regions in your account with a single command:
@@ -143,10 +143,10 @@ $ go run ./cmd/example_multi_region
 
 ## Custom Development and Consulting
 
-The author of Burrow (@myzie) is available for contract work. Feel free to reach
-out on Github or Linkedin for help with anything related to Go, AWS, Terraform,
-cloud security, or SaaS development. See my [profile](https://github.com/myzie)
-for my Linkedin link.
+The author of Burrow [@myzie](https://github.com/myzie) is available for
+contract work and consulting. Feel free to reach out on Github or Linkedin for
+help with anything related to Go, AWS, Terraform, cloud security, or SaaS
+development. See my [profile](https://github.com/myzie) for my Linkedin.
 
 ## Contributing
 
