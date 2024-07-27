@@ -64,8 +64,8 @@ client := burrow.NewRoundRobinClient([]string{
 
 ## AWS Multi-Region Deployment
 
-Burrow includes Terraform configurations to deploy Burrow across the 17 default
-enabled AWS regions in your account with a single command:
+Burrow includes Terraform configurations to deploy Burrow across the 17
+default-enabled AWS regions in your account with a single command:
 
 ```bash
 make deploy BUCKET_NAME=my-terraform-state-bucket
@@ -83,6 +83,28 @@ See the Makefile for more information. You'll need the following installed:
 - jq
 - aws cli
 
+The default-enabled AWS regions:
+
+```
+ap-northeast-1 - Tokyo
+ap-northeast-2 - Seoul
+ap-northeast-3 - Osaka
+ap-south-1 - Mumbai
+ap-southeast-1 - Singapore
+ap-southeast-2 - Sydney
+ca-central-1 - Canada Central
+eu-central-1 - Frankfurt
+eu-north-1 - Stockholm
+eu-west-1 - Ireland
+eu-west-2 - London
+eu-west-3 - Paris
+sa-east-1 - Sao Paulo
+us-east-1 - N. Virginia
+us-east-2 - Ohio
+us-west-1 - N. California
+us-west-2 - Oregon
+```
+
 ## Future Enhancements
 
 - Optional API key authentication in the Lambda proxy
@@ -90,12 +112,37 @@ See the Makefile for more information. You'll need the following installed:
 
 ## Examples
 
-- [cmd/example_client](cmd/example_client)
-- [cmd/example_multi_region](cmd/example_multi_region)
+- [cmd/example_client/main.go](cmd/example_client/main.go)
+- [cmd/example_multi_region/main.go](cmd/example_multi_region/main.go)
+
+The multi-region example makes requests to `https://api.ipify.org?format=json`
+to demonstrate how the proxy IP address changes across regions.
+
+```bash
+$ go run ./cmd/example_multi_region
+{"ip":"13.36.171.187"}
+{"ip":"13.208.187.84"}
+{"ip":"18.142.184.58"}
+{"ip":"3.106.212.219"}
+{"ip":"13.60.11.169"}
+{"ip":"43.200.183.53"}
+{"ip":"3.127.170.76"}
+{"ip":"3.238.225.252"}
+{"ip":"54.185.130.119"}
+{"ip":"54.168.55.243"}
+{"ip":"13.201.18.225"}
+{"ip":"15.222.11.134"}
+{"ip":"54.247.221.168"}
+{"ip":"13.40.174.185"}
+{"ip":"15.228.175.92"}
+{"ip":"3.137.163.176"}
+{"ip":"54.177.165.5"}
+{"ip":"13.36.171.187"} # Back to the first region
+```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a pull request.
 
 ## License
 

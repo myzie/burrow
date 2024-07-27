@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/myzie/burrow"
 )
@@ -47,13 +46,11 @@ func main() {
 	client := burrow.NewRoundRobinClient(proxyURLs)
 
 	for {
-		fmt.Println("----")
 		body, err := runRequest(client, target)
 		if err != nil {
 			log.Fatal(err)
 		}
 		fmt.Println(body)
-		time.Sleep(time.Second)
 	}
 }
 

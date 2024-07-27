@@ -26,6 +26,10 @@ resource "aws_iam_role_policy_attachment" "logs_access" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+// Unfortunately, the lack of dynamic providers in Terraform means we have to
+// manually define each region. If you needed this to be dynamic, you would
+// want to generate this code instead.
+
 // Virginia
 module "region-us-east-1" {
   providers     = { aws = aws.us-east-1 }
