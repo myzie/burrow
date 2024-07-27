@@ -108,6 +108,7 @@ us-west-2 - Oregon
 ## Future Enhancements
 
 - Optional API key authentication in the Lambda proxy
+- Tests
 - Other suggestions?
 
 ## Examples
