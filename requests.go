@@ -32,7 +32,7 @@ type ClientDetails struct {
 	UserAgent string `json:"user_agent"`
 }
 
-func serializeRequest(req *http.Request) (*Request, error) {
+func SerializeRequest(req *http.Request) (*Request, error) {
 	headers := make(map[string]string)
 	for k, v := range req.Header {
 		headers[k] = v[0]
@@ -54,7 +54,7 @@ func serializeRequest(req *http.Request) (*Request, error) {
 	}, nil
 }
 
-func deserializeResponse(serResp *Response) (*http.Response, error) {
+func DeserializeResponse(serResp *Response) (*http.Response, error) {
 	var decodedBody []byte
 	if serResp.Body != "" {
 		var err error

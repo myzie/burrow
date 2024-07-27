@@ -20,7 +20,7 @@ type Transport struct {
 
 // RoundTrip implements the http.RoundTripper interface
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
-	serReq, err := serializeRequest(req)
+	serReq, err := SerializeRequest(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to serialize request: %w", err)
 	}
@@ -50,7 +50,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err := json.Unmarshal(body, &serResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
-	return deserializeResponse(&serResp)
+	return DeserializeResponse(&serResp)
 }
 
 // NewTransport creates a new Transport
