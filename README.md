@@ -141,6 +141,13 @@ $ go run ./cmd/example_multi_region
 {"ip":"13.36.171.187"} # Back to the first region
 ```
 
+## Custom Development and Consulting
+
+The author of Burrow (@myzie) is available for contract work. Feel free to reach
+out on Github or Linkedin for help with anything related to Go, AWS, Terraform,
+cloud security, or SaaS development. See my [profile](https://github.com/myzie)
+for my Linkedin link.
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a pull request.
