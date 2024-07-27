@@ -1,6 +1,7 @@
 # Burrow
 
-Burrow is a serverless and globally-distributed HTTP proxy for Go.
+Burrow is a serverless and globally-distributed HTTP proxy for Go built on
+AWS Lambda.
 
 It is designed to be completely compatible with the standard Go `*http.Client`
 which means it can be transparently added to many existing applications. Burrow
@@ -36,17 +37,17 @@ client := &http.Client{Transport: burrow.NewTransport(proxy, "POST")}
 Create a round-robin transport:
 
 ```go
-proxyURLs := []string{
+proxies := []string{
     "https://randomprefix1.lambda-url.us-east-1.on.aws/",
     "https://randomprefix2.lambda-url.us-east-2.on.aws/",
     "https://randomprefix3.lambda-url.us-west-1.on.aws/",
 }
 var transports []http.RoundTripper
-for _, u := range proxyURLs {
-    transports = append(transports, NewTransport(u, "POST"))
+for _, u := range proxies {
+    transports = append(transports, burrow.NewTransport(u, "POST"))
 }
 client := &http.Client{
-    Transport: NewRoundRobinTransport(transports),
+    Transport: burrow.NewRoundRobinTransport(transports),
 }
 // Client will now rotate through the provided proxies for each request
 ```
@@ -70,17 +71,22 @@ enabled AWS regions in your account with a single command:
 make deploy BUCKET_NAME=my-terraform-state-bucket
 ```
 
+When the command completes, a `function_urls.json` file is written which contains
+the URL for each Lambda function in each region. You can then read this file in
+your Go program and pass the values to `burrow.NewRoundRobinClient`.
+
 See the Makefile for more information. You'll need the following installed:
 
-- Terraform
-- AWS CLI
-- Make
-- Go
-- JQ
+- terraform
+- make
+- go
+- jq
+- aws cli
 
 ## Future Enhancements
 
 - Optional API key authentication in the Lambda proxy
+- Other suggestions?
 
 ## Examples
 
@@ -89,7 +95,7 @@ See the Makefile for more information. You'll need the following installed:
 
 ## Contributing
 
-Contributions to Burrow are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
