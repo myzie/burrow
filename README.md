@@ -12,6 +12,24 @@ requests through one or more AWS Lambda functions exposed with
 A round-robin transport is also provided which makes it trivial to automatically
 rotate through multiple Lambda functions in different regions.
 
+## Rationale
+
+Burrow gives you a network of rotating IPs in different regions, which can be
+useful in a variety of situations, including:
+
+- Development: test how your app behaves when accessed from different regions.
+- Load testing: simulate distributed global traffic for your services.
+- Privacy: anonymous IP addresses when making web requests.
+- Geo-restriction bypass: access region-limited content or services.
+- API rate limiting: reduce the effects of IP address usage quotas when calling APIs.
+- Web scraping: efficiently collect data without blocking or rate-limiting.
+- Multi-region testing: Verify application behavior across different global regions.
+
+Performance for individual requests is relatively slow using Burrow, especially
+when you factor in routing requests through distant regions. Typically, you would
+use Burrow in a highly concurrent manner in Go, so that the latency of individual
+requests matters less than the overall throughput.
+
 ## Features
 
 - Easy-to-use proxy via `http.RoundTripper` implementation
