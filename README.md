@@ -22,13 +22,12 @@ useful in a variety of situations, including:
 - Privacy: anonymous IP addresses when making web requests.
 - Geo-restriction bypass: access region-limited content or services.
 - API rate limiting: reduce the effects of IP address usage quotas when calling APIs.
-- Web scraping: efficiently collect data without blocking or rate-limiting.
+- Web scraping: efficiently collect data in a distributed manner.
 - Multi-region testing: Verify application behavior across different global regions.
 
-Performance for individual requests is relatively slow using Burrow, especially
-when you factor in routing requests through distant regions. Typically, you would
-use Burrow in a highly concurrent manner in Go, so that the latency of individual
-requests matters less than the overall throughput.
+Performance for individual requests through Burrow can be slow, especially when
+routing through distant regions. However, Burrow is designed for highly concurrent
+use in Go, where overall throughput matters more than individual request latency.
 
 ## Features
 
