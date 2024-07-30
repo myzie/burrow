@@ -18,7 +18,7 @@ AUTO_APPROVE?=false
 
 $(LAMBDA_BINARY): $(shell find . -name '*.go') go.mod go.sum
 	mkdir -p dist
-	$(LAMBDA_BUILD) -o dist/bootstrap ./cmd/lambda
+	cd cmd/lambda && $(LAMBDA_BUILD) -o ../../dist/bootstrap .
 	zip -j $(LAMBDA_BINARY) dist/bootstrap
 
 .PHONY: clean
@@ -43,7 +43,7 @@ deploy: $(LAMBDA_BINARY)
 	@echo "wrote function_urls.json"
 
 .PHONY: destroy
-destroy:
+destroy: $(LAMBDA_BINARY)
 	cd terraform/main && \
 	terraform init $(TF_INIT_VARS) && \
 	terraform destroy -auto-approve=$(AUTO_APPROVE) $(TF_VARS)
