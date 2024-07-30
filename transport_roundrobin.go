@@ -24,8 +24,10 @@ func NewRoundRobinTransport(transports []http.RoundTripper) *RoundRobinTransport
 // RoundTrip implements the http.RoundTripper interface
 func (r *RoundRobinTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	r.mutex.Lock()
-	defer r.mutex.Unlock()
-	transport := r.transports[r.index]
+	index := r.index
 	r.index = (r.index + 1) % len(r.transports)
+	transport := r.transports[index]
+	r.mutex.Unlock()
+
 	return transport.RoundTrip(req)
 }
