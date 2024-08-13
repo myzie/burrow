@@ -26,7 +26,7 @@ clean:
 	rm -rf dist
 
 TF_INIT_VARS=-backend-config=bucket=$(BUCKET_NAME) \
-	-backend-config=key=states/burrow/terraform.tfstate \
+	-backend-config=key=states/$(APP_NAME)/terraform.tfstate \
 	-backend-config=region=$(AWS_REGION)
 
 TF_VARS=-var name=$(APP_NAME) \
@@ -37,13 +37,13 @@ TF_VARS=-var name=$(APP_NAME) \
 .PHONY: deploy
 deploy: $(LAMBDA_BINARY)
 	cd terraform/main && \
-	terraform init $(TF_INIT_VARS) && \
+	terraform init $(TF_INIT_VARS) -reconfigure && \
 	terraform apply -auto-approve=$(AUTO_APPROVE) $(TF_VARS) && \
-	terraform output -json function_urls | jq > ../../function_urls.json
-	@echo "wrote function_urls.json"
+	terraform output -json function_urls | jq > ../../$(APP_NAME)-urls.json
+	@echo "wrote $(APP_NAME)-urls.json"
 
 .PHONY: destroy
 destroy: $(LAMBDA_BINARY)
 	cd terraform/main && \
-	terraform init $(TF_INIT_VARS) && \
+	terraform init $(TF_INIT_VARS) -reconfigure && \
 	terraform destroy -auto-approve=$(AUTO_APPROVE) $(TF_VARS)
