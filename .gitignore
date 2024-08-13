@@ -26,3 +26,5 @@ go.work.sum
 
 .terraform
 .terraform.lock.hcl
+
+*.json
