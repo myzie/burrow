@@ -10,6 +10,19 @@ import (
 
 var _ http.RoundTripper = &Transport{}
 
+type TransportError struct {
+	StatusCode int
+	Message    string
+}
+
+func (e *TransportError) Error() string {
+	if e.Message != "" {
+		return fmt.Sprintf("proxy returned non-200 status code: %d - %s",
+			e.StatusCode, e.Message)
+	}
+	return fmt.Sprintf("proxy returned non-200 status code: %d", e.StatusCode)
+}
+
 // Transport implements the http.RoundTripper interface. Used to proxy HTTP
 // requests via a Burrow HTTP endpoint.
 type Transport struct {
@@ -40,7 +53,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}
 	defer proxyResp.Body.Close()
 	if proxyResp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("proxy returned non-200 status code: %d", proxyResp.StatusCode)
+		return nil, &TransportError{StatusCode: proxyResp.StatusCode}
 	}
 	body, err := io.ReadAll(proxyResp.Body)
 	if err != nil {
