@@ -45,20 +45,27 @@ func (r *RoundRobinTransport) WithRetryableCodes(codes []int) *RoundRobinTranspo
 
 // RoundTrip implements the http.RoundTripper interface.
 func (r *RoundRobinTransport) RoundTrip(req *http.Request) (*http.Response, error) {
-	var lastErr error
+	var lastResp *http.Response
 	for i := 0; i <= r.retries; i++ {
 		transport := r.nextTransport()
 		response, err := transport.RoundTrip(req)
-		if err == nil {
-			return response, nil
-		}
-		lastErr = err
-		if !r.isRetryable(err) {
+		if err != nil {
+			// This means the proxying itself failed, which we will not retry
 			return nil, err
 		}
-		fmt.Println("retrying request", req.URL, "attempt", i+1, "err", err)
+		lastResp = response
+		// Return immediately if the status code is in the 2xx range
+		if response.StatusCode >= 200 && response.StatusCode < 300 {
+			return response, nil
+		}
+		// Retry if the status code is considered retryable
+		if r.isRetryable(response.StatusCode) {
+			fmt.Println("retrying request", req.URL, "attempt", i+1, "code", response.StatusCode)
+			continue
+		}
+		return response, nil
 	}
-	return nil, lastErr
+	return lastResp, nil
 }
 
 func (r *RoundRobinTransport) nextTransport() http.RoundTripper {
@@ -69,16 +76,8 @@ func (r *RoundRobinTransport) nextTransport() http.RoundTripper {
 	return transport
 }
 
-func (r *RoundRobinTransport) isRetryable(err error) bool {
-	if err == nil {
-		return false
-	}
-	switch err := err.(type) {
-	case *TransportError:
-		return r.retryable[err.StatusCode]
-	default:
-		return false
-	}
+func (r *RoundRobinTransport) isRetryable(code int) bool {
+	return r.retryable[code]
 }
 
 var defaultRetryableCodes = map[int]bool{
