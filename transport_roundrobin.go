@@ -1,7 +1,6 @@
 package burrow
 
 import (
-	"fmt"
 	"net/http"
 	"sync"
 )
@@ -53,17 +52,15 @@ func (r *RoundRobinTransport) RoundTrip(req *http.Request) (*http.Response, erro
 			// This means the proxying itself failed, which we will not retry
 			return nil, err
 		}
-		lastResp = response
 		// Return immediately if the status code is in the 2xx range
 		if response.StatusCode >= 200 && response.StatusCode < 300 {
 			return response, nil
 		}
-		// Retry if the status code is considered retryable
-		if r.isRetryable(response.StatusCode) {
-			fmt.Println("retrying request", req.URL, "attempt", i+1, "code", response.StatusCode)
-			continue
+		// Return immediately if the status code is not retryable
+		if !r.isRetryable(response.StatusCode) {
+			return response, nil
 		}
-		return response, nil
+		lastResp = response
 	}
 	return lastResp, nil
 }
