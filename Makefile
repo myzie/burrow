@@ -45,5 +45,5 @@ deploy: $(LAMBDA_BINARY)
 .PHONY: destroy
 destroy: $(LAMBDA_BINARY)
 	cd terraform/main && \
-	terraform init $(TF_INIT_VARS) && \
+	terraform init $(TF_INIT_VARS) -reconfigure && \
 	terraform destroy -auto-approve=$(AUTO_APPROVE) $(TF_VARS)
