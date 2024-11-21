@@ -1,6 +1,7 @@
 package burrow
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
@@ -97,7 +98,7 @@ func TestTransport_RoundTrip(t *testing.T) {
 func TestTransportBuilders(t *testing.T) {
 	transport := NewTransport("http://proxy", "POST")
 
-	callback := func(r *Response) {}
+	callback := func(ctx context.Context, r *Response) {}
 	transport.WithCallback(callback)
 	assert.NotNil(t, transport.callback)
 

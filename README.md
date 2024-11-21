@@ -86,8 +86,8 @@ client := burrow.NewClient(
         "application/json",
         "text/plain",
     }),
-    burrow.WithCallback(func(proxyURL string, attempt int, resp *http.Response) {
-        log.Printf("Request through %s succeeded on attempt %d", proxyURL, attempt)
+    burrow.WithCallback(func(ctx context.Context, proxyResponse *burrow.Response) {
+        log.Printf("request proxied")
     }),
 )
 ```

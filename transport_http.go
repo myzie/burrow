@@ -2,6 +2,7 @@ package burrow
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -39,7 +40,7 @@ func ProxyErrorf(code ErrorCode, format string, args ...any) *ProxyError {
 
 // ProxyCallback is a callback function that will be called each time a proxy
 // request has completed successfully.
-type ProxyCallback func(proxyResponse *Response)
+type ProxyCallback func(ctx context.Context, proxyResponse *Response)
 
 // Transport implements the http.RoundTripper interface. Used to proxy HTTP
 // requests via a Burrow HTTP endpoint.
@@ -95,7 +96,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
 	if t.callback != nil {
-		t.callback(&serResp)
+		t.callback(req.Context(), &serResp)
 	}
 	return DeserializeResponse(&serResp)
 }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -32,7 +33,7 @@ func main() {
 		burrow.WithProxyURL(proxy),
 		burrow.WithRetries(int(maxRetries)),
 		burrow.WithRetryableCodes([]int{404}),
-		burrow.WithCallback(func(proxyResponse *burrow.Response) {
+		burrow.WithCallback(func(ctx context.Context, proxyResponse *burrow.Response) {
 			fmt.Printf("proxy response: %+v\n", proxyResponse)
 		}),
 	}
