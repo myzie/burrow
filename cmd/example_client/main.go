@@ -33,8 +33,8 @@ func main() {
 		burrow.WithProxyURL(proxy),
 		burrow.WithRetries(int(maxRetries)),
 		burrow.WithRetryableCodes([]int{404}),
-		burrow.WithCallback(func(ctx context.Context, proxyResponse *burrow.Response) {
-			fmt.Printf("proxy response: %+v\n", proxyResponse)
+		burrow.WithCallback(func(ctx context.Context, req *burrow.Request, res *burrow.Response) {
+			fmt.Printf("proxy response: %+v\n", res)
 		}),
 	}
 	if maxResponseBytes > 0 {

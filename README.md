@@ -86,7 +86,7 @@ client := burrow.NewClient(
         "application/json",
         "text/plain",
     }),
-    burrow.WithCallback(func(ctx context.Context, proxyResponse *burrow.Response) {
+    burrow.WithCallback(func(ctx context.Context, req *burrow.Request, res *burrow.Response) {
         log.Printf("request proxied")
     }),
 )

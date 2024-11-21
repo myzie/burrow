@@ -98,7 +98,7 @@ func TestTransport_RoundTrip(t *testing.T) {
 func TestTransportBuilders(t *testing.T) {
 	transport := NewTransport("http://proxy", "POST")
 
-	callback := func(ctx context.Context, r *Response) {}
+	callback := func(ctx context.Context, req *Request, r *Response) {}
 	transport.WithCallback(callback)
 	assert.NotNil(t, transport.callback)
 
