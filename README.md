@@ -43,7 +43,7 @@ Add burrow package to your Go project:
 go get github.com/myzie/burrow
 ```
 
-Enable on an `http.Client`:
+Manually enable on an `http.Client`:
 
 ```go
 proxy := "https://randomprefix.lambda-url.eu-west-2.on.aws/"
@@ -69,14 +69,27 @@ client := &http.Client{
 // Client will now rotate through the provided proxies for each request
 ```
 
-Or use the `burrow.NewRoundRobinClient` helper:
+Or use the `burrow.NewClient` helper (recommended):
 
 ```go
-client := burrow.NewRoundRobinClient([]string{
-    "https://randomprefix1.lambda-url.us-east-1.on.aws/",
-    "https://randomprefix2.lambda-url.us-east-2.on.aws/",
-    "https://randomprefix3.lambda-url.us-west-1.on.aws/",
-})
+client := burrow.NewClient(
+    burrow.WithProxyURLs([]string{
+        "https://randomprefix1.lambda-url.us-east-1.on.aws/",
+        "https://randomprefix2.lambda-url.us-east-2.on.aws/",
+        "https://randomprefix3.lambda-url.us-west-1.on.aws/",
+    }),
+    burrow.WithRetries(3),
+    burrow.WithRetryableCodes([]int{429}),
+    burrow.WithTimeout(30 * time.Second),
+    burrow.WithMaxResponseBytes(10 * 1024 * 1024), // 10 MB
+    burrow.WithAllowedContentTypes([]string{
+        "application/json",
+        "text/plain",
+    }),
+    burrow.WithCallback(func(proxyURL string, attempt int, resp *http.Response) {
+        log.Printf("Request through %s succeeded on attempt %d", proxyURL, attempt)
+    }),
+)
 ```
 
 ## Multi-Region Deployment in AWS

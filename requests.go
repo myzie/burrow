@@ -10,11 +10,14 @@ import (
 
 // Request represents an http request in a format that can be easily serialized
 type Request struct {
-	URL     string            `json:"url"`
-	Method  string            `json:"method,omitempty"`
-	Headers map[string]string `json:"headers,omitempty"`
-	Body    string            `json:"body,omitempty"`
-	Cookies []string          `json:"cookies,omitempty"`
+	URL                 string            `json:"url"`
+	Method              string            `json:"method,omitempty"`
+	Headers             map[string]string `json:"headers,omitempty"`
+	Body                string            `json:"body,omitempty"`
+	Cookies             string            `json:"cookies,omitempty"`
+	Timeout             float64           `json:"timeout,omitempty"`
+	MaxResponseBytes    int64             `json:"max_response_bytes,omitempty"`
+	AllowedContentTypes []string          `json:"allowed_content_types,omitempty"`
 }
 
 // Response represents an http response in a format that can be easily deserialized
@@ -22,8 +25,9 @@ type Response struct {
 	StatusCode    int               `json:"status_code"`
 	Headers       map[string]string `json:"headers,omitempty"`
 	Body          string            `json:"body,omitempty"`
-	Cookies       []string          `json:"cookies,omitempty"`
 	ClientDetails *ClientDetails    `json:"client_details,omitempty"`
+	Duration      float64           `json:"duration,omitempty"`
+	ProxyName     string            `json:"proxy_name,omitempty"`
 }
 
 // ClientDetails represents the details of the client that made the request
