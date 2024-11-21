@@ -93,12 +93,19 @@ func WithAllowedContentTypes(allowedContentTypes []string) ClientOption {
 // NewClient creates an http.Client with the provided Burrow options.
 // If no proxy URLs are provided, a vanilla http.Client is returned.
 func NewClient(opts ...ClientOption) *http.Client {
+	return &http.Client{Transport: NewTransportWithOptions(opts...)}
+}
+
+// NewTransportWithOptions creates a new http.RoundTripper with the provided
+// Burrow options. If no proxy URLs are provided, the default HTTP transport is
+// returned.
+func NewTransportWithOptions(opts ...ClientOption) http.RoundTripper {
 	cfg := &clientConfig{}
 	for _, opt := range opts {
 		opt(cfg)
 	}
 	if len(cfg.proxyURLs) == 0 {
-		return &http.Client{}
+		return http.DefaultTransport
 	}
 	var transports []http.RoundTripper
 	for _, proxyURL := range cfg.proxyURLs {
@@ -124,5 +131,5 @@ func NewClient(opts ...ClientOption) *http.Client {
 	if cfg.retryableCodes != nil {
 		rr.WithRetryableCodes(cfg.retryableCodes)
 	}
-	return &http.Client{Transport: rr}
+	return rr
 }
