@@ -7,6 +7,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"log/slog"
 	"mime"
 	"net"
 	"net/http"
@@ -91,11 +92,14 @@ func GetHandler(client *http.Client, storage Storage) Handler {
 			return nil, ProxyErrorf(ProxyErrBadRequest, "unsupported url scheme")
 		}
 
+		logger := slog.Default()
+
 		// Generate cache key from URL
 		cacheKey := GetCacheKey(req)
 
 		// Check cache
 		if info, hit := checkCache(ctx, storage, cacheKey, req.CacheMaxAge); hit {
+			logger.Info("cache hit", "url", req.URL)
 			if req.Head {
 				signedURL, err := storage.SignURL(ctx, cacheKey, time.Minute*15)
 				if err != nil {
@@ -164,7 +168,7 @@ func GetHandler(client *http.Client, storage Storage) Handler {
 
 		contentLength := resp.ContentLength
 		contentType := resp.Header.Get("Content-Type")
-		shouldStream := contentLength == -1 || contentLength > inlineResponseLimit
+		shouldStream := resp.StatusCode == 200 && (contentLength == -1 || contentLength > inlineResponseLimit)
 		cacheTime := time.Now().UTC().Format(time.RFC3339)
 
 		metadata := map[string]string{
@@ -188,6 +192,11 @@ func GetHandler(client *http.Client, storage Storage) Handler {
 			}
 			// Update contentLength with the actual size
 			contentLength = info.ContentLength
+			logger.Info("new cache entry streamed",
+				"url", req.URL,
+				"content-type", contentType,
+				"content-length", contentLength,
+			)
 		} else {
 			// For small responses, read into memory
 			limitReader := io.LimitReader(resp.Body, inlineResponseLimit+1)
@@ -202,11 +211,16 @@ func GetHandler(client *http.Client, storage Storage) Handler {
 				return nil, ProxyErrorf(ProxyErrExceededMaxBodySize, "response body exceeded maximum size: %d", inlineResponseLimit)
 			}
 			// Store small response in cache if caching is enabled
-			if req.CacheMaxAge > 0 {
+			if req.CacheMaxAge > 0 && resp.StatusCode == 200 {
 				err = storage.PutObject(ctx, cacheKey, bytes.NewReader(body), contentType, int64(len(body)), metadata)
 				if err != nil {
 					return nil, ProxyErrorf(ProxyErrStorage, "failed to store response in cache: %v", err)
 				}
+				logger.Info("new cache entry written",
+					"url", req.URL,
+					"content-type", contentType,
+					"content-length", contentLength,
+				)
 			}
 		}
 
@@ -230,8 +244,20 @@ func GetHandler(client *http.Client, storage Storage) Handler {
 				return nil, ProxyErrorf(ProxyErrStorage, "failed to generate signed URL: %v", err)
 			}
 			response.SignedURL = signedURL
+			logger.Info("responding with signed url",
+				"url", req.URL,
+				"content-type", contentType,
+				"content-length", contentLength,
+				"headers", headers,
+			)
 		} else {
 			response.Body = base64.StdEncoding.EncodeToString(body)
+			logger.Info("responding with body",
+				"url", req.URL,
+				"content-type", contentType,
+				"content-length", contentLength,
+				"headers", headers,
+			)
 		}
 		return response, nil
 	}
@@ -287,10 +313,36 @@ func getCachedResponse(ctx context.Context, storage Storage, cacheKey string, co
 	}
 	defer reader.Close()
 
+	headers := map[string]string{
+		"Content-Type":   info.ContentType,
+		"Content-Length": strconv.FormatInt(info.ContentLength, 10),
+		"Cache-Time":     info.Metadata[cacheTimestampKey],
+		"Cache-Key":      cacheKey,
+	}
+	if info.ContentEncoding != "" {
+		headers["Content-Encoding"] = info.ContentEncoding
+	}
+	if info.ContentLanguage != "" {
+		headers["Content-Language"] = info.ContentLanguage
+	}
+	if info.ContentLocation != "" {
+		headers["Content-Location"] = info.ContentLocation
+	}
+	if info.ChecksumSHA256 != "" {
+		headers["Checksum-SHA256"] = info.ChecksumSHA256
+	}
+	if info.LastModified != (time.Time{}) {
+		headers["Last-Modified"] = info.LastModified.Format(time.RFC3339)
+	}
+	if info.ETag != "" {
+		headers["ETag"] = info.ETag
+	}
+
 	response := &Response{
 		StatusCode: 200,
-		Headers:    info.Metadata,
+		Headers:    headers,
 	}
+
 	// For large responses, return a signed URL
 	if contentLength > inlineResponseLimit {
 		signedURL, err := storage.SignURL(ctx, cacheKey, 1*time.Hour)

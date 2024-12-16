@@ -126,6 +126,7 @@ func getRegion() string {
 
 func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
 
 	bucketName := os.Getenv("BUCKET_NAME")
 	bucketRegion := os.Getenv("BUCKET_REGION")
