@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/myzie/burrow"
@@ -16,18 +15,15 @@ import (
 
 func main() {
 	var timeoutDur time.Duration
-	var maxResponseBytes, maxRetries int64
-	var allowedContentTypes string
+	var maxRetries int64
+	var cacheMaxAge time.Duration
 	var target, proxy, method string
 	flag.StringVar(&target, "url", "", "URL to send a request to")
 	flag.StringVar(&proxy, "proxy", "", "URL of the proxy to use")
-	flag.Int64Var(&maxResponseBytes, "max-response-bytes", 0, "Maximum response body size")
 	flag.DurationVar(&timeoutDur, "timeout", 0, "Timeout")
 	flag.Int64Var(&maxRetries, "retries", 0, "Maximum retries")
-	flag.StringVar(&allowedContentTypes, "allowed-content-types", "", "Allowed content types")
+	flag.DurationVar(&cacheMaxAge, "cache-max-age", time.Hour, "Cache max age")
 	flag.Parse()
-
-	allowedContentTypesList := strings.Split(allowedContentTypes, ",")
 
 	opts := []burrow.ClientOption{
 		burrow.WithProxyURL(proxy),
@@ -37,14 +33,12 @@ func main() {
 			fmt.Printf("proxy response: %+v\n", res)
 		}),
 	}
-	if maxResponseBytes > 0 {
-		opts = append(opts, burrow.WithMaxResponseBytes(maxResponseBytes))
-	}
+
 	if timeoutDur > 0 {
 		opts = append(opts, burrow.WithTimeout(timeoutDur))
 	}
-	if len(allowedContentTypesList) > 0 {
-		opts = append(opts, burrow.WithAllowedContentTypes(allowedContentTypesList))
+	if cacheMaxAge > 0 {
+		opts = append(opts, burrow.WithCacheMaxAge(cacheMaxAge))
 	}
 	client := burrow.NewClient(opts...)
 
@@ -77,6 +71,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	isPrintable := resp.Header.Get("Content-Type") == "text/plain" ||
+		resp.Header.Get("Content-Type") == "application/json"
+
 	fmt.Println("================")
-	fmt.Println(string(body))
+	if isPrintable {
+		fmt.Println(string(body))
+	} else {
+		fmt.Printf("%d bytes\n", len(body))
+		if err := os.WriteFile("response.bin", body, 0644); err != nil {
+			fmt.Println("failed to write response to file:", err)
+		}
+		fmt.Println("response written to response.bin")
+	}
 }

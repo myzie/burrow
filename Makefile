@@ -12,7 +12,9 @@ LAMBDA_BUILD=CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build
 
 LAMBDA_BINARY=dist/burrow-$(GIT_REVISION).zip
 
-BUCKET_NAME?=terraform-$(AWS_ACCOUNT_ID)
+TERRAFORM_BUCKET_NAME?=terraform-$(AWS_ACCOUNT_ID)
+
+BURROW_BUCKET_NAME?=burrow-$(AWS_ACCOUNT_ID)
 
 AUTO_APPROVE?=false
 
@@ -25,14 +27,15 @@ $(LAMBDA_BINARY): $(shell find . -name '*.go') go.mod go.sum
 clean:
 	rm -rf dist
 
-TF_INIT_VARS=-backend-config=bucket=$(BUCKET_NAME) \
+TF_INIT_VARS=-backend-config=bucket=$(TERRAFORM_BUCKET_NAME) \
 	-backend-config=key=states/$(APP_NAME)/terraform.tfstate \
 	-backend-config=region=$(AWS_REGION)
 
 TF_VARS=-var name=$(APP_NAME) \
 	-var git_revision=$(GIT_REVISION) \
 	-var lambda_filename=../../$(LAMBDA_BINARY) \
-	-var lambda_handler=burrow
+	-var lambda_handler=burrow \
+	-var bucket_name=$(BURROW_BUCKET_NAME)
 
 .PHONY: deploy
 deploy: $(LAMBDA_BINARY)

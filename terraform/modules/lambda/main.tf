@@ -1,4 +1,13 @@
 
+terraform {
+  required_providers {
+    aws = {
+      source                = "hashicorp/aws"
+      configuration_aliases = [aws]
+    }
+  }
+}
+
 resource "aws_lambda_function" "lambda" {
   architectures    = var.architectures
   filename         = var.filename
@@ -12,14 +21,14 @@ resource "aws_lambda_function" "lambda" {
   source_code_hash = filebase64sha256(var.filename)
   tags             = var.tags
   timeout          = var.timeout
-  tracing_config {
-    mode = "Active"
-  }
   environment {
-    variables = var.environment
+    variables = merge(var.environment, {
+      BUCKET_NAME   = var.bucket_name
+      BUCKET_REGION = var.bucket_region
+    })
   }
   depends_on = [
-    aws_cloudwatch_log_group.lambda
+    aws_cloudwatch_log_group.lambda,
   ]
 }
 

@@ -29,8 +29,8 @@ type clientConfig struct {
 	retryableCodes      []int
 	callback            ProxyCallback
 	timeout             time.Duration
-	maxResponseBytes    int64
 	allowedContentTypes []string
+	cacheMaxAge         time.Duration
 }
 
 // WithProxyURL sets a single proxy URL for the client
@@ -76,17 +76,17 @@ func WithTimeout(timeout time.Duration) ClientOption {
 	}
 }
 
-// WithMaxResponseBytes sets the maximum response body size
-func WithMaxResponseBytes(maxResponseBytes int64) ClientOption {
-	return func(c *clientConfig) {
-		c.maxResponseBytes = maxResponseBytes
-	}
-}
-
 // WithAllowedContentTypes sets the allowed content types
 func WithAllowedContentTypes(allowedContentTypes []string) ClientOption {
 	return func(c *clientConfig) {
 		c.allowedContentTypes = allowedContentTypes
+	}
+}
+
+// WithCacheMaxAge sets the maximum age of the cache in seconds
+func WithCacheMaxAge(cacheMaxAge time.Duration) ClientOption {
+	return func(c *clientConfig) {
+		c.cacheMaxAge = cacheMaxAge
 	}
 }
 
@@ -116,11 +116,11 @@ func NewTransportWithOptions(opts ...ClientOption) http.RoundTripper {
 		if cfg.timeout > 0 {
 			transport.WithTimeout(cfg.timeout)
 		}
-		if cfg.maxResponseBytes > 0 {
-			transport.WithMaxResponseBytes(cfg.maxResponseBytes)
-		}
 		if len(cfg.allowedContentTypes) > 0 {
 			transport.WithAllowedContentTypes(cfg.allowedContentTypes)
+		}
+		if cfg.cacheMaxAge > 0 {
+			transport.WithCacheMaxAge(cfg.cacheMaxAge)
 		}
 		transports = append(transports, transport)
 	}

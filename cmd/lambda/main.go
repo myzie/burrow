@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/myzie/burrow"
 )
 
@@ -26,6 +29,7 @@ func (h RequestHandler) Handle(ctx context.Context, request events.APIGatewayV2H
 	if burrowReq.Method == "" {
 		burrowReq.Method = "GET"
 	}
+	start := time.Now()
 	proxyName := fmt.Sprintf("aws.lambda.%s", getRegion())
 
 	h.Logger.Info("request received",
@@ -33,7 +37,7 @@ func (h RequestHandler) Handle(ctx context.Context, request events.APIGatewayV2H
 		"url", burrowReq.URL,
 		"method", burrowReq.Method,
 		"timeout", burrowReq.Timeout,
-		"max_response_bytes", burrowReq.MaxResponseBytes,
+		"cache_max_age", burrowReq.CacheMaxAge,
 		"allowed_content_types", burrowReq.AllowedContentTypes,
 		"client_ip", request.RequestContext.HTTP.SourceIP,
 		"user_agent", request.RequestContext.HTTP.UserAgent)
@@ -54,6 +58,7 @@ func (h RequestHandler) Handle(ctx context.Context, request events.APIGatewayV2H
 		UserAgent: request.RequestContext.HTTP.UserAgent,
 	}
 	response.ProxyName = proxyName
+	response.Duration = time.Since(start).Seconds()
 	responseBody, err := json.Marshal(response)
 	if err != nil {
 		h.Logger.Error("marshalling error", "error", err)
@@ -120,9 +125,29 @@ func getRegion() string {
 }
 
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	bucketName := os.Getenv("BUCKET_NAME")
+	bucketRegion := os.Getenv("BUCKET_REGION")
+
+	if bucketName == "" || bucketRegion == "" {
+		logger.Error("BUCKET_REGION and BUCKET_NAME must be set")
+		os.Exit(1)
+	}
+
+	cfg, err := config.LoadDefaultConfig(
+		context.Background(),
+		config.WithRegion(bucketRegion),
+	)
+	if err != nil {
+		logger.Error("failed to load aws config", "error", err)
+		os.Exit(1)
+	}
+	storage := burrow.NewS3Storage(s3.NewFromConfig(cfg), bucketName)
+
 	h := RequestHandler{
-		Burrow: burrow.GetHandler(),
-		Logger: slog.New(slog.NewJSONHandler(os.Stdout, nil)),
+		Burrow: burrow.GetHandler(burrow.DefaultClient, storage),
+		Logger: logger,
 	}
 	lambda.Start(h.Handle)
 }

@@ -26,12 +26,26 @@ resource "aws_iam_role_policy_attachment" "logs_access" {
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
+module "bucket" {
+  source      = "../modules/bucket"
+  bucket_name = var.bucket_name
+  log_bucket  = var.log_bucket
+  tags        = var.tags
+  providers   = { aws = aws.us-east-1 }
+}
+
+resource "aws_iam_role_policy_attachment" "bucket_write" {
+  role       = aws_iam_role.this.name
+  policy_arn = module.bucket.write_policy_arn
+}
+
 // Unfortunately, the lack of dynamic providers in Terraform means we have to
 // manually define each region. If you needed this to be dynamic, you would
 // want to generate this code instead.
 
 // Virginia
 module "region-us-east-1" {
+  count         = contains(var.regions, "us-east-1") ? 1 : 0
   providers     = { aws = aws.us-east-1 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -42,10 +56,13 @@ module "region-us-east-1" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // California
 module "region-us-west-1" {
+  count         = contains(var.regions, "us-west-1") ? 1 : 0
   providers     = { aws = aws.us-west-1 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -56,10 +73,13 @@ module "region-us-west-1" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Oregon
 module "region-us-west-2" {
+  count         = contains(var.regions, "us-west-2") ? 1 : 0
   providers     = { aws = aws.us-west-2 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -70,10 +90,13 @@ module "region-us-west-2" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Dublin
 module "region-eu-west-1" {
+  count         = contains(var.regions, "eu-west-1") ? 1 : 0
   providers     = { aws = aws.eu-west-1 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -84,10 +107,13 @@ module "region-eu-west-1" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // London
 module "region-eu-west-2" {
+  count         = contains(var.regions, "eu-west-2") ? 1 : 0
   providers     = { aws = aws.eu-west-2 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -98,10 +124,13 @@ module "region-eu-west-2" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Ohio
 module "region-us-east-2" {
+  count         = contains(var.regions, "us-east-2") ? 1 : 0
   providers     = { aws = aws.us-east-2 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -112,10 +141,13 @@ module "region-us-east-2" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Sao Paulo
 module "region-sa-east-1" {
+  count         = contains(var.regions, "sa-east-1") ? 1 : 0
   providers     = { aws = aws.sa-east-1 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -126,10 +158,13 @@ module "region-sa-east-1" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Frankfurt
 module "region-eu-central-1" {
+  count         = contains(var.regions, "eu-central-1") ? 1 : 0
   providers     = { aws = aws.eu-central-1 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -140,10 +175,13 @@ module "region-eu-central-1" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Paris
 module "region-eu-west-3" {
+  count         = contains(var.regions, "eu-west-3") ? 1 : 0
   providers     = { aws = aws.eu-west-3 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -154,10 +192,13 @@ module "region-eu-west-3" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Stockholm
 module "region-eu-north-1" {
+  count         = contains(var.regions, "eu-north-1") ? 1 : 0
   providers     = { aws = aws.eu-north-1 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -168,10 +209,13 @@ module "region-eu-north-1" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Canada
 module "region-ca-central-1" {
+  count         = contains(var.regions, "ca-central-1") ? 1 : 0
   providers     = { aws = aws.ca-central-1 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -182,10 +226,13 @@ module "region-ca-central-1" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Seoul
 module "region-ap-northeast-2" {
+  count         = contains(var.regions, "ap-northeast-2") ? 1 : 0
   providers     = { aws = aws.ap-northeast-2 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -196,10 +243,13 @@ module "region-ap-northeast-2" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Mumbai
 module "region-ap-south-1" {
+  count         = contains(var.regions, "ap-south-1") ? 1 : 0
   providers     = { aws = aws.ap-south-1 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -210,10 +260,13 @@ module "region-ap-south-1" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Singapore
 module "region-ap-southeast-1" {
+  count         = contains(var.regions, "ap-southeast-1") ? 1 : 0
   providers     = { aws = aws.ap-southeast-1 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -224,10 +277,13 @@ module "region-ap-southeast-1" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Sydney
 module "region-ap-southeast-2" {
+  count         = contains(var.regions, "ap-southeast-2") ? 1 : 0
   providers     = { aws = aws.ap-southeast-2 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -238,10 +294,13 @@ module "region-ap-southeast-2" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Tokyo
 module "region-ap-northeast-1" {
+  count         = contains(var.regions, "ap-northeast-1") ? 1 : 0
   providers     = { aws = aws.ap-northeast-1 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -252,10 +311,13 @@ module "region-ap-northeast-1" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }
 
 // Osaka
 module "region-ap-northeast-3" {
+  count         = contains(var.regions, "ap-northeast-3") ? 1 : 0
   providers     = { aws = aws.ap-northeast-3 }
   source        = "../modules/lambda"
   log_retention = var.log_retention
@@ -266,4 +328,6 @@ module "region-ap-northeast-3" {
   runtime       = var.lambda_runtime
   architectures = var.lambda_architectures
   iam_role_arn  = aws_iam_role.this.arn
+  bucket_name   = module.bucket.bucket_name
+  bucket_region = module.bucket.bucket_region
 }

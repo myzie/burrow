@@ -9,12 +9,10 @@ variable "regions" {
   type        = list(string)
   default = [
     "us-east-1",
+    "us-east-2",
     "us-west-1",
     "us-west-2",
-    "eu-west-1",
-    "eu-west-2",
-    "us-east-2",
-    "sa-east-1",
+    "ca-central-1",
   ]
 }
 
@@ -70,4 +68,15 @@ variable "lambda_timeout" {
   description = "Lambda timeout"
   type        = number
   default     = 10
+}
+
+variable "bucket_name" {
+  description = "Name of the S3 bucket to create"
+  type        = string
+}
+
+variable "log_bucket" {
+  description = "Name of the bucket to store access logs"
+  type        = string
+  default     = null
 }

@@ -105,9 +105,6 @@ func TestTransportBuilders(t *testing.T) {
 	transport.WithTimeout(5 * time.Second)
 	assert.Equal(t, 5*time.Second, transport.timeout)
 
-	transport.WithMaxResponseBytes(1000)
-	assert.Equal(t, int64(1000), transport.maxResponseBytes)
-
 	allowedTypes := []string{"application/json"}
 	transport.WithAllowedContentTypes(allowedTypes)
 	assert.Equal(t, allowedTypes, transport.allowedContentTypes)

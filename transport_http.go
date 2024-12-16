@@ -20,6 +20,7 @@ const (
 	ProxyErrExceededMaxBodySize   ErrorCode = 2
 	ProxyErrDisallowedContentType ErrorCode = 3
 	ProxyErrTimeout               ErrorCode = 4
+	ProxyErrStorage               ErrorCode = 5
 )
 
 type ProxyError struct {
@@ -50,8 +51,8 @@ type Transport struct {
 	client              *http.Client
 	callback            ProxyCallback
 	timeout             time.Duration
-	maxResponseBytes    int64
 	allowedContentTypes []string
+	cacheMaxAge         float64
 }
 
 // RoundTrip implements the http.RoundTripper interface
@@ -61,8 +62,10 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		return nil, fmt.Errorf("failed to serialize request: %w", err)
 	}
 	serReq.Timeout = t.timeout.Seconds()
-	serReq.MaxResponseBytes = t.maxResponseBytes
 	serReq.AllowedContentTypes = t.allowedContentTypes
+	if t.cacheMaxAge > 0 {
+		serReq.CacheMaxAge = float64(t.cacheMaxAge)
+	}
 	payload, err := json.Marshal(serReq)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal request: %w", err)
@@ -98,7 +101,7 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.callback != nil {
 		t.callback(req.Context(), serReq, &serResp)
 	}
-	return DeserializeResponse(&serResp)
+	return DeserializeResponse(req.Context(), &serResp)
 }
 
 // NewTransport creates a new Transport
@@ -133,14 +136,14 @@ func (t *Transport) WithTimeout(timeout time.Duration) *Transport {
 	return t
 }
 
-// WithMaxResponseBytes sets the maximum response body size
-func (t *Transport) WithMaxResponseBytes(maxResponseBytes int64) *Transport {
-	t.maxResponseBytes = maxResponseBytes
-	return t
-}
-
 // WithAllowedContentTypes sets the allowed content types
 func (t *Transport) WithAllowedContentTypes(allowedContentTypes []string) *Transport {
 	t.allowedContentTypes = allowedContentTypes
+	return t
+}
+
+// WithCacheMaxAge sets the maximum age of the cache in seconds
+func (t *Transport) WithCacheMaxAge(cacheMaxAge time.Duration) *Transport {
+	t.cacheMaxAge = float64(cacheMaxAge.Seconds())
 	return t
 }

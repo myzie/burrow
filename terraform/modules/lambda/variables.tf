@@ -1,4 +1,3 @@
-
 variable "name" {
   description = "Function name"
   type        = string
@@ -84,4 +83,16 @@ variable "cors" {
     max_age           = number
   })
   default = null
+}
+
+variable "bucket_name" {
+  description = "Name of the S3 bucket to use for storage"
+  type        = string
+  default     = null
+}
+
+variable "bucket_region" {
+  description = "Region where the S3 bucket resides"
+  type        = string
+  default     = null
 }
