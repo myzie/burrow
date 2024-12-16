@@ -101,7 +101,12 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if t.callback != nil {
 		t.callback(req.Context(), serReq, &serResp)
 	}
-	return DeserializeResponse(req.Context(), &serResp)
+	httpResp, err := DeserializeResponse(req.Context(), &serResp)
+	if err != nil {
+		return nil, fmt.Errorf("failed to deserialize response: %w", err)
+	}
+	httpResp.Request = req
+	return httpResp, nil
 }
 
 // NewTransport creates a new Transport

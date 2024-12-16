@@ -6,8 +6,11 @@ import (
 	"io"
 	"time"
 
+	"bytes"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/aws/smithy-go"
 )
 
@@ -29,18 +32,100 @@ func NewS3Storage(client *s3.Client, bucket string) *S3Storage {
 
 // PutObject implements Storage.PutObject
 func (s *S3Storage) PutObject(ctx context.Context, key string, reader io.Reader, contentType string, contentLength int64, metadata map[string]string) error {
+	// If content length is known, use simple PutObject
+	if contentLength >= 0 {
+		return s.simplePutObject(ctx, key, reader, contentType, contentLength, metadata)
+	}
+	// For unknown length, use multipart upload
+	return s.multipartPutObject(ctx, key, reader, contentType, metadata)
+}
+
+func (s *S3Storage) simplePutObject(ctx context.Context, key string, reader io.Reader, contentType string, contentLength int64, metadata map[string]string) error {
+	// Current implementation
 	input := &s3.PutObjectInput{
+		Bucket:        aws.String(s.bucket),
+		Key:           aws.String(key),
+		Body:          reader,
+		ContentType:   aws.String(contentType),
+		Metadata:      metadata,
+		ContentLength: aws.Int64(contentLength),
+	}
+	if _, err := s.client.PutObject(ctx, input); err != nil {
+		return convertS3Error(err)
+	}
+	return nil
+}
+
+func (s *S3Storage) multipartPutObject(ctx context.Context, key string, reader io.Reader, contentType string, metadata map[string]string) error {
+	// Initialize multipart upload
+	createInput := &s3.CreateMultipartUploadInput{
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(key),
-		Body:        reader,
 		ContentType: aws.String(contentType),
 		Metadata:    metadata,
 	}
-	// Only set ContentLength if it's not -1
-	if contentLength >= 0 {
-		input.ContentLength = aws.Int64(contentLength)
+	createResult, err := s.client.CreateMultipartUpload(ctx, createInput)
+	if err != nil {
+		return convertS3Error(err)
 	}
-	if _, err := s.client.PutObject(ctx, input); err != nil {
+	// If the upload fails, make sure to abort it
+	defer func() {
+		if err != nil {
+			abortInput := &s3.AbortMultipartUploadInput{
+				Bucket:   aws.String(s.bucket),
+				Key:      aws.String(key),
+				UploadId: createResult.UploadId,
+			}
+			_, _ = s.client.AbortMultipartUpload(ctx, abortInput)
+		}
+	}()
+	// Upload parts
+	var completedParts []types.CompletedPart
+	partNumber := int32(1)
+	buffer := make([]byte, 5*1024*1024) // 5MB buffer size (minimum for S3 multipart)
+	for {
+		// Read a chunk
+		n, readErr := io.ReadFull(reader, buffer)
+		if readErr != nil && readErr != io.EOF && readErr != io.ErrUnexpectedEOF {
+			err = readErr
+			return convertS3Error(err)
+		}
+		// If we read some data, upload it as a part
+		if n > 0 {
+			uploadInput := &s3.UploadPartInput{
+				Bucket:     aws.String(s.bucket),
+				Key:        aws.String(key),
+				PartNumber: aws.Int32(partNumber),
+				UploadId:   createResult.UploadId,
+				Body:       bytes.NewReader(buffer[:n]),
+			}
+			uploadResult, uploadErr := s.client.UploadPart(ctx, uploadInput)
+			if uploadErr != nil {
+				err = uploadErr
+				return convertS3Error(err)
+			}
+			completedParts = append(completedParts, types.CompletedPart{
+				ETag:       uploadResult.ETag,
+				PartNumber: aws.Int32(partNumber),
+			})
+			partNumber++
+		}
+		// If we've reached EOF, break
+		if readErr == io.EOF || readErr == io.ErrUnexpectedEOF {
+			break
+		}
+	}
+	// Complete multipart upload
+	completeInput := &s3.CompleteMultipartUploadInput{
+		Bucket:   aws.String(s.bucket),
+		Key:      aws.String(key),
+		UploadId: createResult.UploadId,
+		MultipartUpload: &types.CompletedMultipartUpload{
+			Parts: completedParts,
+		},
+	}
+	_, err = s.client.CompleteMultipartUpload(ctx, completeInput)
+	if err != nil {
 		return convertS3Error(err)
 	}
 	return nil

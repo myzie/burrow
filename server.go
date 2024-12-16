@@ -47,7 +47,7 @@ type Handler func(ctx context.Context, req *Request) (*Response, error)
 const (
 	inlineResponseLimit = 1024 * 1024 // 1MB
 	cacheKeyPrefix      = "cache"
-	cacheMetadataTime   = "cache-time"
+	cacheTimestampKey   = "timestamp"
 )
 
 func checkCache(ctx context.Context, storage Storage, cacheKey string, cacheMaxAge float64) (*ObjectInfo, bool) {
@@ -58,7 +58,7 @@ func checkCache(ctx context.Context, storage Storage, cacheKey string, cacheMaxA
 	if err != nil || !info.Exists {
 		return nil, false
 	}
-	cacheTime, ok := info.Metadata[cacheMetadataTime]
+	cacheTime, ok := info.Metadata[cacheTimestampKey]
 	if !ok {
 		return nil, false
 	}
@@ -104,7 +104,7 @@ func GetHandler(client *http.Client, storage Storage) Handler {
 				headers := map[string]string{
 					"Content-Type":   info.ContentType,
 					"Content-Length": strconv.FormatInt(info.ContentLength, 10),
-					"Cache-Time":     info.Metadata[cacheMetadataTime],
+					"Cache-Time":     info.Metadata[cacheTimestampKey],
 					"Cache-Key":      cacheKey,
 				}
 				return &Response{
@@ -168,7 +168,7 @@ func GetHandler(client *http.Client, storage Storage) Handler {
 		cacheTime := time.Now().UTC().Format(time.RFC3339)
 
 		metadata := map[string]string{
-			cacheMetadataTime: cacheTime,
+			cacheTimestampKey: cacheTime,
 			"url":             req.URL,
 			"method":          req.Method,
 			"region":          os.Getenv("AWS_REGION"),
@@ -179,7 +179,7 @@ func GetHandler(client *http.Client, storage Storage) Handler {
 			// Stream directly to storage without reading into memory
 			err = storage.PutObject(ctx, cacheKey, resp.Body, contentType, contentLength, metadata)
 			if err != nil {
-				return nil, ProxyErrorf(ProxyErrStorage, "failed to store response in storage: %v", err)
+				return nil, ProxyErrorf(ProxyErrStorage, "failed to stream response to storage: %v", err)
 			}
 			// Get the actual content length from storage
 			info, err := storage.HeadObject(ctx, cacheKey)
@@ -215,7 +215,7 @@ func GetHandler(client *http.Client, storage Storage) Handler {
 		headers := map[string]string{
 			"Content-Type":   contentType,
 			"Content-Length": strconv.FormatInt(contentLength, 10),
-			"Cache-Time":     metadata[cacheMetadataTime],
+			"Cache-Time":     cacheTime,
 			"Cache-Key":      cacheKey,
 		}
 		response := &Response{
