@@ -93,6 +93,8 @@ func DeserializeResponse(ctx context.Context, serResp *Response) (*http.Response
 		resp.Body = body
 	}
 
+	resp.Body = io.NopCloser(bytes.NewBuffer([]byte{}))
+
 	return resp, nil
 }
 
