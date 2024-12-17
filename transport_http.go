@@ -98,12 +98,12 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	if err := json.Unmarshal(body, &serResp); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
 	}
-	if t.callback != nil {
-		t.callback(req.Context(), serReq, &serResp)
-	}
 	httpResp, err := DeserializeResponse(req.Context(), &serResp)
 	if err != nil {
 		return nil, fmt.Errorf("failed to deserialize response: %w", err)
+	}
+	if t.callback != nil {
+		t.callback(req.Context(), serReq, &serResp)
 	}
 	httpResp.Request = req
 	return httpResp, nil
