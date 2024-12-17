@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 )
 
 // Request represents an http request in a format that can be easily serialized
@@ -78,11 +79,8 @@ func DeserializeResponse(ctx context.Context, serResp *Response) (*http.Response
 			return nil, fmt.Errorf("failed to decode response body: %w", err)
 		}
 		resp.Body = io.NopCloser(bytes.NewBuffer(decodedBody))
-	}
-
-	if serResp.SignedURL != "" {
-		// Make a request in order to get the data at the signed url
-		// and set it as the body of the response
+		resp.ContentLength = int64(len(decodedBody))
+	} else if serResp.SignedURL != "" {
 		body, headers, err := getSignedUrl(ctx, serResp.SignedURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get signed url: %w", err)
@@ -91,9 +89,15 @@ func DeserializeResponse(ctx context.Context, serResp *Response) (*http.Response
 			resp.Header.Set(k, v[0])
 		}
 		resp.Body = body
+		if contentLength := headers.Get("Content-Length"); contentLength != "" {
+			if length, err := strconv.ParseInt(contentLength, 10, 64); err == nil {
+				resp.ContentLength = length
+			}
+		}
+	} else {
+		resp.Body = io.NopCloser(bytes.NewBuffer([]byte{}))
+		resp.ContentLength = 0
 	}
-
-	resp.Body = io.NopCloser(bytes.NewBuffer([]byte{}))
 
 	return resp, nil
 }

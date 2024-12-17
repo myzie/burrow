@@ -307,6 +307,9 @@ func isTimeoutError(err error) bool {
 }
 
 func getCachedResponse(ctx context.Context, storage Storage, cacheKey string, contentLength int64) (*Response, error) {
+
+	logger := slog.Default()
+
 	reader, info, err := storage.GetObject(ctx, cacheKey)
 	if err != nil {
 		return nil, ProxyErrorf(ProxyErrStorage, "failed to retrieve cached response: %v", err)
@@ -338,6 +341,14 @@ func getCachedResponse(ctx context.Context, storage Storage, cacheKey string, co
 		headers["ETag"] = info.ETag
 	}
 
+	logger.Info("reading cached response",
+		"cache-key", cacheKey,
+		"content-type", info.ContentType,
+		"content-length", info.ContentLength,
+		"headers", headers,
+		"greater-than-inline-limit", contentLength > inlineResponseLimit,
+	)
+
 	response := &Response{
 		StatusCode: 200,
 		Headers:    headers,
@@ -350,6 +361,12 @@ func getCachedResponse(ctx context.Context, storage Storage, cacheKey string, co
 			return nil, ProxyErrorf(ProxyErrStorage, "failed to generate signed URL: %v", err)
 		}
 		response.SignedURL = signedURL
+		logger.Info("responding with signed url",
+			"cache-key", cacheKey,
+			"content-type", info.ContentType,
+			"content-length", info.ContentLength,
+			"headers", headers,
+		)
 	} else {
 		// Read and encode small responses
 		body, err := io.ReadAll(reader)
@@ -357,6 +374,9 @@ func getCachedResponse(ctx context.Context, storage Storage, cacheKey string, co
 			return nil, ProxyErrorf(ProxyErrStorage, "failed to read cached response: %v", err)
 		}
 		response.Body = base64.StdEncoding.EncodeToString(body)
+		logger.Info("responding with body",
+			"len", len(body),
+		)
 	}
 	return response, nil
 }
