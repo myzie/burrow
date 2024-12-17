@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -66,9 +65,6 @@ func SerializeRequest(req *http.Request) (*Request, error) {
 }
 
 func DeserializeResponse(ctx context.Context, serResp *Response) (*http.Response, error) {
-
-	logger := slog.Default()
-
 	resp := &http.Response{
 		StatusCode: serResp.StatusCode,
 		Header:     make(http.Header),
@@ -77,14 +73,10 @@ func DeserializeResponse(ctx context.Context, serResp *Response) (*http.Response
 		resp.Header.Set(k, v)
 	}
 
-	logger.Info("deserialize response", "headers", serResp.Headers)
-
 	// Set resp.ContentLength according to the header
 	if contentLength := serResp.Headers["Content-Length"]; contentLength != "" {
 		if length, err := strconv.ParseInt(contentLength, 10, 64); err == nil {
 			resp.ContentLength = length
-			logger.Info("case (0) set content-length from header",
-				"content-length", resp.ContentLength)
 		}
 	}
 
@@ -95,23 +87,12 @@ func DeserializeResponse(ctx context.Context, serResp *Response) (*http.Response
 		}
 		resp.Body = io.NopCloser(bytes.NewBuffer(decodedBody))
 		resp.ContentLength = int64(len(decodedBody))
-		logger.Info("case (1) set content-length from body", "content-length", resp.ContentLength)
 	} else if serResp.SignedURL != "" {
-		body, headers, err := getSignedUrl(ctx, serResp.SignedURL)
+		body, _, err := getSignedUrl(ctx, serResp.SignedURL)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get signed url: %w", err)
 		}
-		logger.Info("case (2)", "s3-headers", headers)
-
-		// for k, v := range headers {
-		// 	resp.Header.Set(k, v[0])
-		// }
 		resp.Body = body
-		// if contentLength := headers.Get("Content-Length"); contentLength != "" {
-		// 	if length, err := strconv.ParseInt(contentLength, 10, 64); err == nil {
-		// 		resp.ContentLength = length
-		// 	}
-		// }
 	} else {
 		resp.Body = io.NopCloser(bytes.NewBuffer([]byte{}))
 		resp.ContentLength = 0
